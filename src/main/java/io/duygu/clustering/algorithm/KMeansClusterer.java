@@ -2,8 +2,7 @@ package io.duygu.clustering.algorithm;
 
 import io.duygu.dto.Dataset;
 
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
@@ -24,18 +23,32 @@ public class KMeansClusterer {
     }
 
     public void cluster(int clusterCount, int iterationCount) {
-        int[] centroidIndexes = selectInitialCentroids(clusterCount);
-        Arrays.stream(centroidIndexes).map(centroidIndex -> calculateSimilarity((int)centroidIndex)).collect(Collectors.toList());
-
+        List<Integer> centroidIndexes = selectInitialCentroids(clusterCount);
+        List<List<Double>> datasetCentroidSimilarityValues = centroidIndexes.stream().map(this::calculateSimilarity).collect(Collectors.toList());
+        predict(datasetCentroidSimilarityValues);
     }
 
-    private double[] calculateSimilarity(int centroidIndex) {
+    private void predict(List<List<Double>> datasetCentroidSimilarityValues) {
+        List<Double> predictions = IntStream.range(0, dataset.getDataset().size()).asDoubleStream().map(index -> findMostSimiliarCentroid(datasetCentroidSimilarityValues, (int) index)).boxed().collect(Collectors.toList());
+    }
+
+    private double findMostSimiliarCentroid(List<List<Double>> datasetCentroidSimilarityValues, int index) {
+        return datasetCentroidSimilarityValues.stream()
+                .max(Comparator.comparingDouble(similarityToCentroid -> similarityToCentroid.get(index))).get().get(index);
+        //TODO this method returns max cosine similarity value however the value necessary for the calculation is index of the list (centroid) that contains the max value.
+    }
+
+    private List<Double> calculateSimilarity(int centroidIndex) {
         return IntStream.range(0, dataset.getDataset().size()).asDoubleStream()
-                .map(index -> cosineSimilarity.calculate(centroidIndex, (int) index)).toArray();
+                .map(index -> cosineSimilarity.calculate(centroidIndex, (int) index)).boxed().collect(Collectors.toList());
     }
 
-    private int[] selectInitialCentroids(int clusterCount) {
-        return IntStream.range(0, clusterCount).map(index -> random.nextInt(dataset.getMatrix().rowSize())).toArray();
+    private List<Integer> selectInitialCentroids(int clusterCount) {
+        return IntStream.range(0, clusterCount).map(index -> getRandomVectorIndex()).boxed().collect(Collectors.toList());
+    }
+
+    private int getRandomVectorIndex() {
+        return random.nextInt(dataset.getMatrix().rowSize());
     }
 
 

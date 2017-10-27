@@ -16,7 +16,8 @@ public class CosineSimilarityCalculator {
     }
 
     public double calculate(int vectorAIndex, int vectorBIndex) {
-        IntStream.range(0, dataset.getVocabulary().size()).forEach(index -> calculateSimilarityForColumn(vectorAIndex, vectorBIndex, index));
+        IntStream.range(0, dataset.getVocabulary().size())
+                .forEach(index -> calculateSimilarityForColumn(vectorAIndex, vectorBIndex, index));
         return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
     }
 
