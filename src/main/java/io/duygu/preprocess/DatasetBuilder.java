@@ -7,6 +7,7 @@ import org.apache.mahout.math.SequentialAccessSparseVector;
 import org.apache.mahout.math.SparseRowMatrix;
 
 import java.io.FileNotFoundException;
+import java.nio.charset.Charset;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -83,7 +84,7 @@ public class DatasetBuilder {
     }
 
     private String[] tokenizeThesisAbstract(Thesis thesis) {
-        return thesis.getTr().replaceAll("\\p{Punct}+", "").split("\\s+");
+        return thesis.getTr().toLowerCase(new Locale("tr", "TR")).replaceAll("\\p{Punct}+", "").split("\\s+");
     }
 
     private void calculate(OperationType type, Runnable runnable) {
