@@ -42,11 +42,7 @@ public class KMeansClusterer {
     private Map<Integer, List<Integer>> convertPredictionsToMap(List<Integer> predictions) {
         Map<Integer, List<Integer>> map = new HashMap<>();
         for (int i = 0; i < predictions.size(); i++) {
-            List<Integer> docs = map.get(predictions.get(i));
-            if (docs == null) {
-                docs = new ArrayList<>();
-                map.put(predictions.get(i), docs);
-            }
+            List<Integer> docs = map.computeIfAbsent(predictions.get(i), k -> new ArrayList<>());
             docs.add(i);
         }
         return map;

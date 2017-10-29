@@ -21,7 +21,7 @@ import java.util.Map;
 public class App {
 
 
-    public static void main(String[] args) throws FileNotFoundException {
+    public static void main(String[] args) {
         if (args.length != 1) {
             System.exit(1);
         }
@@ -30,10 +30,22 @@ public class App {
 //        CommanDLineArguments
 
         DatasetReader reader = new DatasetReader();
-        List<Thesis> thesisList = reader.getDocs(args[0]);
+        List<Thesis> thesisList = null;
+        try {
+            thesisList = reader.getDocs(args[0]);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            System.exit(1);
+        }
         DatasetPreprocessor preprocessor = new DatasetPreprocessor();
         List<Thesis> theses = preprocessor.process(thesisList);
-        Dataset data = new DatasetBuilder().createDataset(theses);
+        Dataset data = null;
+        try {
+            data = new DatasetBuilder().createDataset(theses);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            System.exit(1);
+        }
         KMeansClusterer clusterer = new KMeansClusterer(data);
         Map<Integer, Double> clusterErrorRate = new HashMap<>();
         for (int clusterCount = 2; clusterCount <= 20; clusterCount++) {
