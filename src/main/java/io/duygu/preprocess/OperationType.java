@@ -1,10 +1,10 @@
 package io.duygu.preprocess;
 
 public enum OperationType {
-    TOKENIZATION("Tokenization"),
-    VOCABULARY("Vocabulary creation"),
-    TERM("Counting documents in which term appeared for each term in vocabulary"),
-    MATRIX("Matrix creation");
+    TOKENIZATION(Constants.TOKENIZATION_LOG_PREFIX),
+    VOCABULARY(Constants.VOCABULARY_LOG_PREFIX),
+    TERM(Constants.TERM_LOG_PREFIX),
+    MATRIX(Constants.MATRIX_LOG_PREFIX);
 
     private String logPrefix;
 
@@ -16,8 +16,10 @@ public enum OperationType {
         return logPrefix;
     }
 
-    public OperationType setLogPrefix(String logPrefix) {
-        this.logPrefix = logPrefix;
-        return this;
+    private static class Constants {
+        public static final String TOKENIZATION_LOG_PREFIX = "Tokenization";
+        public static final String VOCABULARY_LOG_PREFIX = "Vocabulary creation";
+        public static final String TERM_LOG_PREFIX = "Counting documents in which term appeared for each term in vocabulary";
+        public static final String MATRIX_LOG_PREFIX = "Matrix creation";
     }
 }
