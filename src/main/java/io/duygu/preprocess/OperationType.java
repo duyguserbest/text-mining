@@ -2,9 +2,9 @@ package io.duygu.preprocess;
 
 public enum OperationType {
     TOKENIZATION("Tokenization"),
-    VOCABULARY("Tokenization"),
-    TERM("Tokenization"),
-    ASDS("Tokenization");
+    VOCABULARY("Vocabulary creation"),
+    TERM("Counting documents in which term appeared for each term in vocabulary"),
+    MATRIX("Matrix creation");
 
     private String logPrefix;
 

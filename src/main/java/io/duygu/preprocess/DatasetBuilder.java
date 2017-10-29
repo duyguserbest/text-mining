@@ -21,15 +21,12 @@ public class DatasetBuilder {
     private Dataset dataset;
 
     public Dataset createDataset(List<Thesis> theses) throws FileNotFoundException {
-        dataset = new Dataset();
+        dataset = new Dataset(theses);
 
         calculate(OperationType.TOKENIZATION, () -> tokenizeDataset(theses));
-
         calculate(OperationType.VOCABULARY, this::createVocabulary);
-
         calculate(OperationType.TERM, this::getTermAppearingDocCount);
-
-        calculate(OperationType.ASDS, this::getSparseRowMatrix);
+        calculate(OperationType.MATRIX, this::getSparseRowMatrix);
 
         return dataset;
     }
@@ -53,19 +50,20 @@ public class DatasetBuilder {
 
     private void getSparseRowMatrix() {
         Matrix corpus = new SparseRowMatrix(getTokenizedDataSetSize(), dataset.getVocabulary().size());
+        Map<String, Long> termAppearingDocCount = getTermAppearingDocCount();
         IntStream.range(0, getTokenizedDataSetSize())
-                .forEach(rowIndex -> corpus.assignRow(rowIndex, vectorizeDoc(rowIndex, getTermAppearingDocCount())));
+                .forEach(rowIndex -> corpus.assignRow(rowIndex, vectorizeDoc(rowIndex, termAppearingDocCount)));
         dataset.setMatrix(corpus);
     }
 
     private SequentialAccessSparseVector vectorizeDoc(int doc, Map<String, Long> termAppearingDocCount) {
+        SequentialAccessSparseVector vector = new SequentialAccessSparseVector(dataset.getVocabulary().size());
         Map<String, Long> termFrequencyInDoc = calculateTermFrequencyInDoc(doc);
         double docWordCount = termFrequencyInDoc.values().stream().mapToDouble(Long::doubleValue).sum();
-        SequentialAccessSparseVector vector = new SequentialAccessSparseVector(dataset.getVocabulary().size());
         termFrequencyInDoc.forEach((word, frequency) -> {
             final int wordIndex = Collections.binarySearch(dataset.getVocabulary(), word);
-            final Double tfId = calculateTFIDF(frequency.doubleValue(), docWordCount, getTokenizedDataSetSize(), termAppearingDocCount.get(word).doubleValue());
-            vector.set(wordIndex, tfId);
+            final Double tfIdf = calculateTFIDF(frequency.doubleValue(), docWordCount, getTokenizedDataSetSize(), termAppearingDocCount.get(word).doubleValue());
+            vector.set(wordIndex, tfIdf);
         });
         return vector;
     }

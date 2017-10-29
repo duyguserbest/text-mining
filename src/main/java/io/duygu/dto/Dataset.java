@@ -12,6 +12,13 @@ public class Dataset {
 
     private Matrix matrix;
 
+    public Dataset() {
+    }
+
+    public Dataset(List<Thesis> dataset) {
+        this.dataset = dataset;
+    }
+
     public List<Thesis> getDataset() {
         return dataset;
     }
