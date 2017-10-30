@@ -34,7 +34,7 @@ public class LineChartDrawer {
 
     private static DefaultCategoryDataset createDataset(Map<Integer, Double> clusterErrorRate) {
         DefaultCategoryDataset dataset = new DefaultCategoryDataset();
-        clusterErrorRate.entrySet().forEach(entry -> dataset.addValue(entry.getValue(), Y_AXIS_TITLE, entry.getKey()));
+        clusterErrorRate.entrySet().forEach(entry -> dataset.addValue((entry.getValue()- 25000d), Y_AXIS_TITLE, entry.getKey()));
         return dataset;
     }
 }
