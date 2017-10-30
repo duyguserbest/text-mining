@@ -7,7 +7,6 @@ import org.apache.mahout.math.SequentialAccessSparseVector;
 import org.apache.mahout.math.SparseRowMatrix;
 
 import java.io.FileNotFoundException;
-import java.nio.charset.Charset;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -24,16 +23,17 @@ public class DatasetBuilder {
     public Dataset createDataset(List<Thesis> theses) throws FileNotFoundException {
         dataset = new Dataset(theses);
 
-        calculate(OperationType.TOKENIZATION, () -> tokenizeDataset(theses));
+        calculate(OperationType.TOKENIZATION, this::tokenizeDataset);
         calculate(OperationType.VOCABULARY, this::createVocabulary);
+        calculate(OperationType.CATEGORY, this::parseCategory);
         calculate(OperationType.TERM, this::getTermAppearingDocCount);
         calculate(OperationType.MATRIX, this::getSparseRowMatrix);
 
         return dataset;
     }
 
-    private void tokenizeDataset(List<Thesis> dataset) {
-        tokenizedDataset = dataset.stream()
+    private void tokenizeDataset() {
+        tokenizedDataset = dataset.getDataset().stream()
                 .map(this::tokenizeThesisAbstract)
                 .collect(Collectors.toList());
     }
@@ -85,6 +85,20 @@ public class DatasetBuilder {
 
     private String[] tokenizeThesisAbstract(Thesis thesis) {
         return thesis.getTr().toLowerCase(new Locale("tr", "TR")).replaceAll("\\p{Punct}+", "").split("\\s+");
+    }
+
+    private void parseCategory() {
+        dataset.setCategories(dataset.getDataset().stream().map(this::parseFacultyName).collect(Collectors.toList()));
+    }
+
+    private String parseFacultyName(Thesis thesis) {
+        String categoryDirty = thesis.getMeta().split("\\n")[4];
+        String[] split = categoryDirty.split("/");
+        if (split.length > 2) {
+            return split[1];
+        } else {
+            return categoryDirty;
+        }
     }
 
     private void calculate(OperationType type, Runnable runnable) {

@@ -12,6 +12,8 @@ public class Dataset {
 
     private Matrix matrix;
 
+    private List<String> categories;
+
     public Dataset() {
     }
 
@@ -41,5 +43,13 @@ public class Dataset {
 
     public void setMatrix(Matrix matrix) {
         this.matrix = matrix;
+    }
+
+    public List<String> getCategories() {
+        return categories;
+    }
+
+    public void setCategories(List<String> categories) {
+        this.categories = categories;
     }
 }

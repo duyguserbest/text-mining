@@ -4,7 +4,9 @@ public enum OperationType {
     TOKENIZATION(Constants.TOKENIZATION_LOG_PREFIX),
     VOCABULARY(Constants.VOCABULARY_LOG_PREFIX),
     TERM(Constants.TERM_LOG_PREFIX),
-    MATRIX(Constants.MATRIX_LOG_PREFIX);
+    MATRIX(Constants.MATRIX_LOG_PREFIX),
+    CATEGORY(Constants.CATEGORY_LOG_PREFIX);
+
 
     private String logPrefix;
 
@@ -21,5 +23,6 @@ public enum OperationType {
         public static final String VOCABULARY_LOG_PREFIX = "Vocabulary creation";
         public static final String TERM_LOG_PREFIX = "Counting documents in which term appeared for each term in vocabulary";
         public static final String MATRIX_LOG_PREFIX = "Matrix creation";
+        public static final String CATEGORY_LOG_PREFIX = "Category parse";
     }
 }

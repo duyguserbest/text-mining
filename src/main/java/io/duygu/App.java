@@ -2,6 +2,7 @@ package io.duygu;
 
 import io.duygu.clustering.algorithm.KMeansClusterer;
 import io.duygu.clustering.algorithm.MeanSquaredErrorCalculator;
+import io.duygu.clustering.algorithm.PurityCalculator;
 import io.duygu.clustering.chart.LineChartDrawer;
 import io.duygu.dto.Dataset;
 import io.duygu.dto.Thesis;
@@ -48,13 +49,18 @@ public class App {
         }
         KMeansClusterer clusterer = new KMeansClusterer(data);
         Map<Integer, Double> clusterErrorRate = new HashMap<>();
+        Map<Integer, List<Integer>> predictions = null;
         for (int clusterCount = 2; clusterCount <= 20; clusterCount++) {
             long start = System.currentTimeMillis();
-            Map<Integer, List<Integer>> predictions = clusterer.cluster(clusterCount, 3);
+            predictions = clusterer.cluster(clusterCount, 3);
             long completionTime = System.currentTimeMillis() - start;
             System.out.println("Clustering took: " + completionTime / 1000 + " seconds.");
             double error = MeanSquaredErrorCalculator.calculate(predictions, clusterer.getCentroids(), data);
             clusterErrorRate.put(clusterCount, error);
+            start = System.currentTimeMillis();
+            System.out.println("Purity for clusterCount "+clusterCount+": " + PurityCalculator.calculate(predictions, data));
+            completionTime = System.currentTimeMillis() - start;
+            System.out.println("Purity calculation took: " + completionTime / 1000 + " seconds.");
         }
         try {
             LineChartDrawer.draw(clusterErrorRate);
