@@ -62,7 +62,7 @@ public class DatasetBuilder {
         double docWordCount = termFrequencyInDoc.values().stream().mapToDouble(Long::doubleValue).sum();
         termFrequencyInDoc.forEach((word, frequency) -> {
             final int wordIndex = findWordIndex(word);
-            final Double tfIdf = calculateTFIDF(frequency.doubleValue(), docWordCount, getTokenizedDataSetSize(),
+            final Double tfIdf = TFIDFCalculator.calculate(frequency.doubleValue(), docWordCount, getTokenizedDataSetSize(),
                 termAppearingDocCount.get(word).doubleValue());
             vector.set(wordIndex, tfIdf);
         });
@@ -81,13 +81,6 @@ public class DatasetBuilder {
         return tokenizedDataset.size();
     }
 
-    private Double calculateTFIDF(double docTermAppearanceCount, double docWordCount, double docCount,
-                                  double termAppearingDocCount) {
-        double termFrequency = docTermAppearanceCount / docWordCount;
-        double inverseDocumentFrequency = Math.log(docCount / termAppearingDocCount);
-        return termFrequency * inverseDocumentFrequency;
-    }
-
     private String[] tokenizeThesisAbstract(Thesis thesis) {
         return thesis.getTr().toLowerCase(new Locale("tr", "TR")).replaceAll("\\p{Punct}+", "").split("\\s+");
     }
@@ -99,11 +92,7 @@ public class DatasetBuilder {
     private String parseFacultyName(Thesis thesis) {
         String categoryDirty = thesis.getMeta().split("\\n")[4];
         String[] split = categoryDirty.split("/");
-        if (split.length > 2) {
-            return split[1];
-        } else {
-            return categoryDirty;
-        }
+        return split.length > 2 ? split[1] : categoryDirty;
     }
 
 }
