@@ -2,11 +2,11 @@ package io.duygu.preprocess;
 
 import io.duygu.dto.Dataset;
 import io.duygu.dto.Thesis;
+import io.duygu.logger.ElapsedTimeLogger;
 import org.apache.mahout.math.Matrix;
 import org.apache.mahout.math.SequentialAccessSparseVector;
 import org.apache.mahout.math.SparseRowMatrix;
 
-import java.io.FileNotFoundException;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -18,43 +18,42 @@ import static java.util.stream.Collectors.groupingBy;
 public class DatasetBuilder {
 
     private List<String[]> tokenizedDataset;
+
     private Dataset dataset;
 
-    public Dataset createDataset(List<Thesis> theses) throws FileNotFoundException {
+    public Dataset createDataset(List<Thesis> theses) throws Exception {
         dataset = new Dataset(theses);
-
-        calculate(OperationType.TOKENIZATION, this::tokenizeDataset);
-        calculate(OperationType.VOCABULARY, this::createVocabulary);
-        calculate(OperationType.CATEGORY, this::parseCategory);
-        calculate(OperationType.TERM, this::getTermAppearingDocCount);
-        calculate(OperationType.MATRIX, this::getSparseRowMatrix);
-
+        tokenizedDataset = ElapsedTimeLogger.log(OperationType.TOKENIZATION, this::tokenizeDataset);
+        dataset.setVocabulary(ElapsedTimeLogger.log(OperationType.VOCABULARY, this::createVocabulary));
+        dataset.setCategories(ElapsedTimeLogger.log(OperationType.CATEGORY, this::parseCategory));
+        dataset.setMatrix(ElapsedTimeLogger.log(OperationType.MATRIX, this::getSparseRowMatrix));
         return dataset;
     }
 
-    private void tokenizeDataset() {
-        tokenizedDataset = dataset.getDataset().stream()
-                .map(this::tokenizeThesisAbstract)
-                .collect(Collectors.toList());
+    private List<String[]> tokenizeDataset() {
+        return dataset.getDataset().stream()
+                      .map(this::tokenizeThesisAbstract)
+                      .collect(Collectors.toList());
     }
 
-    private void createVocabulary() {
-        dataset.setVocabulary(tokenizedDataset.stream()
-                .flatMap(Arrays::stream).distinct().sorted()
-                .collect(Collectors.toList()));
+    private List<String> createVocabulary() {
+        return tokenizedDataset.stream()
+                               .flatMap(Arrays::stream).distinct().sorted()
+                               .collect(Collectors.toList());
     }
 
     private Map<String, Long> getTermAppearingDocCount() {
-        return tokenizedDataset.stream().map(vector -> Arrays.stream(vector).collect(Collectors.toSet())).flatMap(Set::stream)
-                .collect(groupingBy(Function.identity(), counting()));
+        return tokenizedDataset.stream().map(vector -> Arrays.stream(vector).collect(Collectors.toSet()))
+                               .flatMap(Set::stream)
+                               .collect(groupingBy(Function.identity(), counting()));
     }
 
-    private void getSparseRowMatrix() {
-        Matrix corpus = new SparseRowMatrix(getTokenizedDataSetSize(), dataset.getVocabulary().size());
-        Map<String, Long> termAppearingDocCount = getTermAppearingDocCount();
+    private Matrix getSparseRowMatrix() {
+        Matrix matrix = new SparseRowMatrix(getTokenizedDataSetSize(), dataset.getVocabulary().size());
+        Map<String, Long> termAppearingDocCount = ElapsedTimeLogger.log(OperationType.TERM, this::getTermAppearingDocCount);
         IntStream.range(0, getTokenizedDataSetSize())
-                .forEach(rowIndex -> corpus.assignRow(rowIndex, vectorizeDoc(rowIndex, termAppearingDocCount)));
-        dataset.setMatrix(corpus);
+                 .forEach(rowIndex -> matrix.assignRow(rowIndex, vectorizeDoc(rowIndex, termAppearingDocCount)));
+        return matrix;
     }
 
     private SequentialAccessSparseVector vectorizeDoc(int doc, Map<String, Long> termAppearingDocCount) {
@@ -62,11 +61,16 @@ public class DatasetBuilder {
         Map<String, Long> termFrequencyInDoc = calculateTermFrequencyInDoc(doc);
         double docWordCount = termFrequencyInDoc.values().stream().mapToDouble(Long::doubleValue).sum();
         termFrequencyInDoc.forEach((word, frequency) -> {
-            final int wordIndex = Collections.binarySearch(dataset.getVocabulary(), word);
-            final Double tfIdf = calculateTFIDF(frequency.doubleValue(), docWordCount, getTokenizedDataSetSize(), termAppearingDocCount.get(word).doubleValue());
+            final int wordIndex = findWordIndex(word);
+            final Double tfIdf = calculateTFIDF(frequency.doubleValue(), docWordCount, getTokenizedDataSetSize(),
+                termAppearingDocCount.get(word).doubleValue());
             vector.set(wordIndex, tfIdf);
         });
         return vector;
+    }
+
+    private int findWordIndex(String word) {
+        return Collections.binarySearch(dataset.getVocabulary(), word);
     }
 
     private Map<String, Long> calculateTermFrequencyInDoc(int doc) {
@@ -77,7 +81,8 @@ public class DatasetBuilder {
         return tokenizedDataset.size();
     }
 
-    private Double calculateTFIDF(double docTermAppearanceCount, double docWordCount, double docCount, double termAppearingDocCount) {
+    private Double calculateTFIDF(double docTermAppearanceCount, double docWordCount, double docCount,
+                                  double termAppearingDocCount) {
         double termFrequency = docTermAppearanceCount / docWordCount;
         double inverseDocumentFrequency = Math.log(docCount / termAppearingDocCount);
         return termFrequency * inverseDocumentFrequency;
@@ -87,8 +92,8 @@ public class DatasetBuilder {
         return thesis.getTr().toLowerCase(new Locale("tr", "TR")).replaceAll("\\p{Punct}+", "").split("\\s+");
     }
 
-    private void parseCategory() {
-        dataset.setCategories(dataset.getDataset().stream().map(this::parseFacultyName).collect(Collectors.toList()));
+    private List<String> parseCategory() {
+        return dataset.getDataset().stream().map(this::parseFacultyName).collect(Collectors.toList());
     }
 
     private String parseFacultyName(Thesis thesis) {
@@ -101,10 +106,4 @@ public class DatasetBuilder {
         }
     }
 
-    private void calculate(OperationType type, Runnable runnable) {
-        long start = System.currentTimeMillis();
-        runnable.run();
-        long completionTime = System.currentTimeMillis() - start;
-        System.out.println(type.getLogPrefix() + " took: " + completionTime / 1000 + " seconds.");
-    }
 }

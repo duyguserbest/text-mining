@@ -1,17 +1,19 @@
 package io.duygu;
 
-import io.duygu.clustering.algorithm.KMeansClusterer;
+import io.duygu.clustering.algorithm.KMeans;
 import io.duygu.clustering.algorithm.MeanSquaredErrorCalculator;
 import io.duygu.clustering.algorithm.PurityCalculator;
 import io.duygu.clustering.chart.LineChartDrawer;
 import io.duygu.dto.Dataset;
 import io.duygu.dto.Thesis;
+import io.duygu.logger.ElapsedTimeLogger;
 import io.duygu.preprocess.DatasetBuilder;
 import io.duygu.preprocess.DatasetPreprocessor;
 import io.duygu.preprocess.DatasetReader;
+import io.duygu.preprocess.OperationType;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,8 +23,9 @@ import java.util.Map;
  */
 public class App {
 
+    private static final Logger LOGGER = LogManager.getLogger();
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         if (args.length != 1) {
             System.exit(1);
         }
@@ -30,43 +33,24 @@ public class App {
 //        JCommander jCommander = new JCommander();
 //        CommanDLineArguments
 
-        DatasetReader reader = new DatasetReader();
-        List<Thesis> thesisList = null;
-        try {
-            thesisList = reader.getDocs(args[0]);
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-            System.exit(1);
-        }
-        DatasetPreprocessor preprocessor = new DatasetPreprocessor();
-        List<Thesis> theses = preprocessor.process(thesisList);
-        Dataset data = null;
-        try {
-            data = new DatasetBuilder().createDataset(theses);
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-            System.exit(1);
-        }
-        KMeansClusterer clusterer = new KMeansClusterer(data);
+        String filePath = args[0];
+        List<Thesis> thesisList = ElapsedTimeLogger.log(OperationType.PARSE, () -> DatasetReader.getDocs(filePath));
+        List<Thesis> theses = ElapsedTimeLogger
+            .log(OperationType.ELIMINATION, () -> DatasetPreprocessor.eliminateNullAbstracts(thesisList));
+        Dataset data = new DatasetBuilder().createDataset(theses);
+        KMeans clusterer = new KMeans(data);
         Map<Integer, Double> clusterErrorRate = new HashMap<>();
-        Map<Integer, List<Integer>> predictions = null;
         for (int clusterCount = 2; clusterCount <= 20; clusterCount++) {
-            long start = System.currentTimeMillis();
-            predictions = clusterer.cluster(clusterCount, 3);
-            long completionTime = System.currentTimeMillis() - start;
-            System.out.println("Clustering took: " + completionTime / 1000 + " seconds.");
+            final int count = clusterCount;
+            final Map<Integer, List<Integer>> predictions =
+                ElapsedTimeLogger.log(OperationType.CLUSTERING, () -> clusterer.cluster(count, 3));
             double error = MeanSquaredErrorCalculator.calculate(predictions, clusterer.getCentroids(), data);
             clusterErrorRate.put(clusterCount, error);
-            start = System.currentTimeMillis();
-            System.out.println("Purity for clusterCount "+clusterCount+": " + PurityCalculator.calculate(predictions, data));
-            completionTime = System.currentTimeMillis() - start;
-            System.out.println("Purity calculation took: " + completionTime / 1000 + " seconds.");
+            Double purity =
+                ElapsedTimeLogger.log(OperationType.PURITY, () -> PurityCalculator.calculate(predictions, data));
+            LOGGER.info("Purity for clusterCount " + clusterCount + ": " + purity);
         }
-        try {
-            LineChartDrawer.draw(clusterErrorRate);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        LineChartDrawer.draw(clusterErrorRate);
     }
 
 }

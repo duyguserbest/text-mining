@@ -3,18 +3,17 @@ package io.duygu.clustering.algorithm;
 import io.duygu.dto.Dataset;
 import junit.framework.Assert;
 import junit.framework.TestCase;
-import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class KMeansClustererTest extends TestCase {
+public class KMeansTest extends TestCase {
 
     public void testFindMostSimiliarCentroid() {
         List<List<Double>> datasetCentroidSimilarityValues = generateDatasetCentroidSimilarityValues();
-        KMeansClusterer kMeansClusterer = new KMeansClusterer(new Dataset());
-        Assert.assertEquals(kMeansClusterer.findMostSimiliarCentroid(datasetCentroidSimilarityValues, 0),1);
+        KMeans kMeans = new KMeans(new Dataset());
+        Assert.assertEquals(kMeans.findMostSimiliarCentroid(datasetCentroidSimilarityValues, 0),1);
     }
 
     public List<List<Double>> generateDatasetCentroidSimilarityValues() {
