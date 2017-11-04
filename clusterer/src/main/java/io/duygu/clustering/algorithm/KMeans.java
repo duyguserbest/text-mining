@@ -15,7 +15,7 @@ import java.util.stream.IntStream;
 
 import static java.util.stream.Collectors.groupingBy;
 
-public class KMeans {
+public class KMeans implements Clusterer{
 
     private Random random;
 
@@ -51,14 +51,13 @@ public class KMeans {
                             Collectors.mapping(Map.Entry::getKey, Collectors.toList())));
     }
 
-    protected int findMostSimiliarCentroid(List<List<Double>> datasetCentroidSimilarityValues, int index) {
+    private int findMostSimiliarCentroid(List<List<Double>> datasetCentroidSimilarityValues, int index) {
         return IntStream.range(0, datasetCentroidSimilarityValues.size())
                         .reduce((i, j) -> getMostSimiliarCentroidIndex(datasetCentroidSimilarityValues, index, i, j))
                         .getAsInt();
     }
 
-    private int getMostSimiliarCentroidIndex(List<List<Double>> datasetCentroidSimilarityValues, int index, int i,
-                                             int j) {
+    private int getMostSimiliarCentroidIndex(List<List<Double>> datasetCentroidSimilarityValues, int index, int i, int j) {
         return datasetCentroidSimilarityValues.get(i).get(index) > datasetCentroidSimilarityValues.get(j).get(index) ?
             i : j;
     }
@@ -106,7 +105,7 @@ public class KMeans {
         return random.nextInt(dataset.getMatrix().rowSize());
     }
 
-    public List<Vector> getCentroids() {
-        return centroids;
+    public double calculateErrorRate() {
+        return MeanSquaredErrorCalculator.calculate(predictions, centroids, dataset);
     }
 }
